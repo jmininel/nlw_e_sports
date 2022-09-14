@@ -2,32 +2,77 @@ import express from 'express';
 import { PrismaClient } from "@prisma/client"
  
 const app = express()
-const prisma = new PrismaClient()
+app.use(express.json)
+
+const prisma = new PrismaClient({})
 
 //listagem de games com contagem de anuncio
-app.get('/games', (req, res) => {
-    return res.json([]);
+app.get('/games', async (req, res) => {
+   const games = await prisma.game.findMany({
+    include: {
+    _count:  {
+      select: {
+        ads: true,
+      }
+     }
+    }
+   })
+   
+   return res.json(games);
 });
 
 //Criação de novo anúncio
-app.post('/ads', (req, res) => {
-    return res.status(201).json([1,2]);
+app.post('/games/:id/ads', (req, res) => {
+    const gameId = req.params.id;
+    const body = req.body;
+
+    return res.status(201).json(body);
 });
 
 // Listagem de anúncios por game
-app.get('/games/:id/ads', (req, res) => {
-    return res.json([
-        {id: 1, name: 'Anuncio 1' },
-        {id: 2, name: 'Anuncio 2' },
-        {id: 3, name: 'Anuncio 3' },
-        {id: 4, name: 'Anuncio 3' },
-        {id: 7, name: 'Anuncio 3' },
-    ])
+app.get('/games/:id/ads', async (req, res) => {
+   const gameId = req.params.id;
+
+  const ads = await prisma.ad.findMany({
+    select: {
+     id:              true,
+     name:            true,
+     weekdays:        true,
+     useVoiceChannel: true,
+     yearsPlaying:    true,
+     hourStart:       true,
+     hourEnd:         true,
+   },    
+    where: {
+        gameId,
+    },
+    orderBy: {
+        createdAt: 'desc',
+    }
+  })
+      return res.json(ads.map( ad => {
+        return {
+            ...ad,
+            weekdays: ad.weekdays.split(',')
+        }
+      }))
 })
 
 // Buscar Discord pelo ID do anúncio
-app.get('/ads/:id/discord', (req, res) => {
-    return res.json([])
-})
+app.get('/ads/:id/discord', async (req, res) => {
+    const adId = req.params.id;
+
+    const ad = await prisma.ad.findFirstOrThrow({
+        select: {
+            discord: true,
+        },
+        where: {
+            id: adId,
+         }
+      })
+       return res.json({
+        discord: ad.discord,
+       })
+    })
 
 app.listen(3333);
