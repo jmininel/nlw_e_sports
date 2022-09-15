@@ -1,10 +1,18 @@
 import express from 'express';
-import { PrismaClient } from "@prisma/client"
- 
-const app = express()
-app.use(express.json)
+import cors from  'cors';
 
-const prisma = new PrismaClient({})
+import { PrismaClient } from "@prisma/client";
+import { convertHourStringToMinutes } from "./utils/convertHoursMinutes"
+import { convertMinutesToHourString } from "./utils/convertMinutesHour";
+
+const app = express();
+
+app.use(express.json());
+app.use(cors());
+
+const prisma = new PrismaClient({
+  log: ['query'],
+})
 
 //listagem de games com contagem de anuncio
 app.get('/games', async (req, res) => {
@@ -22,11 +30,24 @@ app.get('/games', async (req, res) => {
 });
 
 //Criação de novo anúncio
-app.post('/games/:id/ads', (req, res) => {
+app.post('/games/:id/ads', async (req, res) => {
     const gameId = req.params.id;
-    const body = req.body;
+    const body: any = req.body;
 
-    return res.status(201).json(body);
+      const ad = await prisma.ad.create({
+      data: {
+        gameId,
+        name: body.name, 
+        yearsPlaying: body.yearsPlaying,
+        discord : body.discord,
+        weekdays: body.weekdays.join(','),
+        hourStart: convertHourStringToMinutes(body.hourStart),
+        hourEnd: convertHourStringToMinutes(body.hourEnd),
+        useVoiceChannel: body.useVoiceChannel,
+      }
+    }) 
+
+    return res.status(201).json(ad);
 });
 
 // Listagem de anúncios por game
@@ -50,10 +71,12 @@ app.get('/games/:id/ads', async (req, res) => {
         createdAt: 'desc',
     }
   })
-      return res.json(ads.map( ad => {
+      return res.json(ads.map(ad => {
         return {
             ...ad,
-            weekdays: ad.weekdays.split(',')
+            weekdays: ad.weekdays.split(','),
+            hourStart: convertMinutesToHourString(ad.hourStart),
+            hourEnd: convertMinutesToHourString(ad.hourEnd),
         }
       }))
 })
@@ -69,10 +92,11 @@ app.get('/ads/:id/discord', async (req, res) => {
         where: {
             id: adId,
          }
-      })
+      });
+
        return res.json({
         discord: ad.discord,
        })
-    })
+    });
 
 app.listen(3333);
