@@ -105,8 +105,6 @@ function App() {
                       title="Sbado" className="w-8 h-10 rounded bg-zinc-900">S</button>
                    </div>
 
-
-
                   </div>
 
                   <div className="flex flex-col gap-2 flex-1">
