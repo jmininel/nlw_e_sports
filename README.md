@@ -3,5 +3,5 @@
 </h1>
 
 <p align="center">
-    <img alt="Project" title="Project Landing Page" src="/src/assets/nlwSports.png" width="600px" />
+    <img alt="Project" title="Project Game Page" src="../assets/nlwSports.png" 
 </p>
